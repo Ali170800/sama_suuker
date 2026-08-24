@@ -24,7 +24,8 @@
             </div>
         <% } %>
 
-        <form action="login" method="post">
+        <!-- ACTION CORRIGÉE ICI -->
+        <form action="${pageContext.request.contextPath}/login" method="post">
             <div class="mb-3">
                 <label class="form-label fw-semibold">Adresse Email</label>
                 <input type="email" name="email" class="form-control" required placeholder="nom@exemple.com">
