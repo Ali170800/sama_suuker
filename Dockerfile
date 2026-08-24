@@ -10,8 +10,8 @@ FROM tomcat:10.1-jdk21-temurin
 # Supprimer les applications par défaut de Tomcat pour libérer la racine
 RUN rm -rf /usr/local/tomcat/webapps/*
 
-# Copier le fichier WAR généré par Maven dans le dossier webapps de Tomcat sous le nom ROOT.war
-COPY --from=build /app/target/*.war /usr/local/tomcat/webapps/ROOT.war
+# Copier explicitement le fichier s'appelant samasuker-1.0-SNAPSHOT.war vers ROOT.war
+COPY --from=build /app/target/samasuker-1.0-SNAPSHOT.war /usr/local/tomcat/webapps/ROOT.war
 
 # Exposer le port par défaut de Tomcat
 EXPOSE 8080
