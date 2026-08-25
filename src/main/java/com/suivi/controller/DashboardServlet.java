@@ -3,8 +3,6 @@ package com.suivi.controller;
 import com.suivi.model.Compte;
 import com.suivi.model.Glycemie;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityManagerFactory;
-import jakarta.persistence.Persistence;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -18,7 +16,6 @@ import java.util.List;
 
 @WebServlet("/dashboard")
 public class DashboardServlet extends HttpServlet {
-    private static final EntityManagerFactory emf = Persistence.createEntityManagerFactory("glycemiePU");
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -33,7 +30,9 @@ public class DashboardServlet extends HttpServlet {
         String periode = request.getParameter("periode");
         String typeFiltre = request.getParameter("typeFiltre");
 
-        EntityManager em = emf.createEntityManager();
+        // On récupère l'EntityManager préparé par le filtre (EntityManagerFilter)
+        EntityManager em = (EntityManager) request.getAttribute("em");
+
         try {
             StringBuilder jpql = new StringBuilder("SELECT g FROM Glycemie g WHERE g.compte.id = :compteId");
 
@@ -66,9 +65,10 @@ public class DashboardServlet extends HttpServlet {
             List<Glycemie> glycemies = query.getResultList();
             request.setAttribute("glycemies", glycemies);
 
-        } finally {
-            em.close();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+        // Note : Pas besoin de em.close() ici, le filtre (EntityManagerFilter) s'en charge automatiquement !
 
         // On fait le forward vers la page JSP pour afficher les données
         request.getRequestDispatcher("/dashboard.jsp").forward(request, response);

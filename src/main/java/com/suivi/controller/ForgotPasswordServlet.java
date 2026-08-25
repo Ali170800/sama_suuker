@@ -2,8 +2,6 @@ package com.suivi.controller;
 
 import com.suivi.model.Compte;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityManagerFactory;
-import jakarta.persistence.Persistence;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -14,7 +12,6 @@ import java.io.IOException;
 
 @WebServlet("/mot-de-passe-oublie")
 public class ForgotPasswordServlet extends HttpServlet {
-    private static final EntityManagerFactory emf = Persistence.createEntityManagerFactory("glycemiePU");
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -26,7 +23,9 @@ public class ForgotPasswordServlet extends HttpServlet {
             return;
         }
 
-        EntityManager em = emf.createEntityManager();
+        // On récupère l'EntityManager préparé par le filtre (EntityManagerFilter)
+        EntityManager em = (EntityManager) request.getAttribute("em");
+
         try {
             // Vérifier si le compte existe avec cet email
             Compte compte = em.createQuery("SELECT c FROM Compte c WHERE c.email = :email", Compte.class)
@@ -36,7 +35,7 @@ public class ForgotPasswordServlet extends HttpServlet {
                     .orElse(null);
 
             if (compte != null) {
-                // Le compte existe : on stocke temporairement l'ID ou l'email en session pour l'étape suivante
+                // Le compte existe : on stocke temporairement l'email en session pour l'étape suivante
                 HttpSession session = request.getSession();
                 session.setAttribute("emailReset", email);
 
@@ -51,8 +50,7 @@ public class ForgotPasswordServlet extends HttpServlet {
             e.printStackTrace();
             request.setAttribute("error", "Une erreur est survenue.");
             request.getRequestDispatcher("mot-de-passe-oublie.jsp").forward(request, response);
-        } finally {
-            em.close();
         }
+        // Note : Pas besoin de em.close() ici, le filtre s'en charge automatiquement !
     }
 }

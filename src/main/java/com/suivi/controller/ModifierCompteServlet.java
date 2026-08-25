@@ -1,10 +1,8 @@
 package com.suivi.controller;
 
 import com.suivi.model.Compte;
-import com.suivi.utils.PasswordUtils; // <-- Import de l'utilitaire de hashage
+import com.suivi.utils.PasswordUtils;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityManagerFactory;
-import jakarta.persistence.Persistence;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -15,7 +13,6 @@ import java.io.IOException;
 
 @WebServlet("/compte/modifier")
 public class ModifierCompteServlet extends HttpServlet {
-    private static final EntityManagerFactory emf = Persistence.createEntityManagerFactory("glycemiePU");
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -29,36 +26,40 @@ public class ModifierCompteServlet extends HttpServlet {
         String nouvelEmail = request.getParameter("email");
         String nouveauPassword = request.getParameter("password");
 
-        EntityManager em = emf.createEntityManager();
+        // On récupère l'EntityManager préparé et partagé par le filtre (EntityManagerFilter)
+        EntityManager em = (EntityManager) request.getAttribute("em");
+
         try {
             em.getTransaction().begin();
 
-            // Récupérer le compte depuis la base de données pour le mettre à jour
             Compte compte = em.find(Compte.class, compteConnecte.getId());
 
             if (compte != null) {
-                compte.setEmail(nouvelEmail);
+                if (nouvelEmail != null && !nouvelEmail.trim().isEmpty()) {
+                    compte.setEmail(nouvelEmail.trim());
+                }
 
-                // Ne met à jour le mot de passe que s'il a été saisi (avec hashage)
-                if (nouveauPassword != null && !nouveauPassword.trim().isEmpty()) {
-                    compte.setPassword(PasswordUtils.hashPassword(nouveauPassword));
+                // Vérification stricte : on ne touche au mot de passe que s'il est explicitement rempli
+                if (nouveauPassword != null && !nouveauPassword.trim().isEmpty() && nouveauPassword.trim().length() >= 4) {
+                    compte.setPassword(PasswordUtils.hashPassword(nouveauPassword.trim()));
                 }
 
                 em.merge(compte);
                 em.getTransaction().commit();
 
-                // Mettre à jour l'objet en session pour que les infos soient à jour
+                // Mettre à jour l'objet en session pour que l'interface reflète les changements
                 session.setAttribute("compteConnecte", compte);
             }
 
-            response.sendRedirect(request.getContextPath() + "/dashboard");
+            response.sendRedirect(request.getContextPath() + "/dashboard?success=modifie");
 
         } catch (Exception e) {
-            if (em.getTransaction().isActive()) em.getTransaction().rollback();
-            e.printStackTrace();
+            if (em != null && em.getTransaction().isActive()) {
+                em.getTransaction().rollback();
+            }
+            e.printStackTrace(); // Trace l'erreur dans les logs Render
             response.sendRedirect(request.getContextPath() + "/dashboard?error=modification");
-        } finally {
-            em.close();
         }
+        // Note : Pas besoin de em.close() ici, le filtre s'en charge automatiquement dans son bloc finally !
     }
 }

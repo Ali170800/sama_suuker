@@ -32,7 +32,7 @@
             </div>
         </div>
 
-        <!-- Bloc de modification des identifiants -->
+        <!-- Bloc de modification des identifiants (Corrigé avec value="") -->
         <div class="card shadow-sm border-0 rounded-4 p-3 p-md-4 mb-3 bg-white">
             <h4 class="fw-bold mb-3 text-dark fs-5">🔐 Modifier mes identifiants</h4>
             <form action="${pageContext.request.contextPath}/compte/modifier" method="post" class="row g-3">
@@ -42,7 +42,7 @@
                 </div>
                 <div class="col-12 col-md-5">
                     <label class="form-label fw-semibold small">Nouveau Mot de passe</label>
-                    <input type="password" name="password" class="form-control form-control-sm" placeholder="Laisser vide si inchangé">
+                    <input type="password" name="password" class="form-control form-control-sm" value="" placeholder="Laisser vide si inchangé">
                 </div>
                 <div class="col-12 col-md-2 d-flex align-items-end">
                     <button type="submit" class="btn btn-warning btn-sm fw-bold w-100">Mettre à jour</button>

@@ -3,8 +3,6 @@ package com.suivi.controller;
 import com.suivi.model.Compte;
 import com.suivi.utils.PasswordUtils;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityManagerFactory;
-import jakarta.persistence.Persistence;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -16,23 +14,10 @@ import java.io.IOException;
 @WebServlet("/reinitialiser-password")
 public class ResetPasswordServlet extends HttpServlet {
 
-    // Il est préférable de récupérer l'EntityManagerFactory via le ServletContext ou de l'initialiser proprement,
-    // mais si vous gardez l'approche Persistence, assurez-vous de bien gérer les exceptions.
-    private static EntityManagerFactory emf;
-
-    @Override
-    public void init() throws ServletException {
-        super.init();
-        if (emf == null) {
-            emf = Persistence.createEntityManagerFactory("glycemiePU");
-        }
-    }
-
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("emailReset") == null) {
-            // Redirection avec une erreur de session expirée si besoin
             response.sendRedirect(request.getContextPath() + "/mot-de-passe-oublie.jsp?error=expired");
             return;
         }
@@ -46,9 +31,10 @@ public class ResetPasswordServlet extends HttpServlet {
             return;
         }
 
-        EntityManager em = null;
+        // On récupère l'EntityManager préparé et partagé par le filtre (EntityManagerFilter)
+        EntityManager em = (EntityManager) request.getAttribute("em");
+
         try {
-            em = emf.createEntityManager();
             em.getTransaction().begin();
 
             Compte compte = em.createQuery("SELECT c FROM Compte c WHERE c.email = :email", Compte.class)
@@ -82,20 +68,9 @@ public class ResetPasswordServlet extends HttpServlet {
             if (em != null && em.getTransaction().isActive()) {
                 em.getTransaction().rollback();
             }
-            e.printStackTrace(); // Trace l'erreur dans les logs de Render pour voir le vrai problème SQL/réseau
+            e.printStackTrace();
             response.sendRedirect(request.getContextPath() + "/nouveau-mot-de-passe.jsp?error=server");
-        } finally {
-            if (em != null && em.isOpen()) {
-                em.close();
-            }
         }
-    }
-
-    @Override
-    public void destroy() {
-        if (emf != null && emf.isOpen()) {
-            emf.close();
-        }
-        super.destroy();
+        // Note : Pas besoin de em.close() ici, le filtre s'en charge automatiquement dans son bloc finally !
     }
 }
