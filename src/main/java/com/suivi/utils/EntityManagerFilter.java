@@ -1,4 +1,4 @@
-package com.suivi.filter;
+package com.suivi.utils;
 
 import com.suivi.utils.JPAUtil;
 import jakarta.persistence.EntityManager;
