@@ -3,6 +3,7 @@ package com.suivi.controller;
 import com.suivi.dao.GlycemieDao;
 import com.suivi.model.Glycemie;
 import com.suivi.model.Insuline;
+import jakarta.persistence.EntityManager;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -24,12 +25,15 @@ public class ModifierMesureServlet extends HttpServlet {
             return;
         }
 
+        // --- Récupération de l'EntityManager ouvert par le filtre ---
+        EntityManager em = (EntityManager) request.getAttribute("em");
+
         String idStr = request.getParameter("id");
         if (idStr != null) {
             try {
                 Long id = Long.parseLong(idStr);
-                // Utilisation d'une méthode DAO ou recherche sécurisée avec ses insulines
-                Glycemie glycemie = glycemieDao.trouverParId(id); // Optionnel si vous préférez ajouter cette méthode, ou via EntityManager
+                // Passage de l'EntityManager et de l'ID au DAO
+                Glycemie glycemie = glycemieDao.trouverParId(em, id);
                 if (glycemie != null) {
                     request.setAttribute("glycemie", glycemie);
                 }
@@ -47,6 +51,9 @@ public class ModifierMesureServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login.jsp");
             return;
         }
+
+        // --- Récupération de l'EntityManager ouvert par le filtre ---
+        EntityManager em = (EntityManager) request.getAttribute("em");
 
         String idStr = request.getParameter("id");
         String valeurStr = request.getParameter("valeur");
@@ -67,8 +74,8 @@ public class ModifierMesureServlet extends HttpServlet {
         try {
             Long id = Long.parseLong(idStr);
 
-            // Récupération de l'objet existant via le DAO (avec FetchType.EAGER, les insulines sont déjà chargées)
-            Glycemie glycemie = glycemieDao.trouverParId(id);
+            // Récupération de l'objet existant via le DAO en transmettant l'EntityManager
+            Glycemie glycemie = glycemieDao.trouverParId(em, id);
 
             if (glycemie != null) {
                 // Mise à jour des champs de la glycémie
@@ -98,8 +105,8 @@ public class ModifierMesureServlet extends HttpServlet {
                     glycemie.addInsuline(ins2);
                 }
 
-                // Sauvegarde via le DAO
-                glycemieDao.mettreAJour(glycemie);
+                // Sauvegarde via le DAO en transmettant l'EntityManager
+                glycemieDao.mettreAJour(em, glycemie);
             }
 
             response.sendRedirect(request.getContextPath() + "/dashboard");

@@ -4,6 +4,7 @@ import com.suivi.dao.GlycemieDao;
 import com.suivi.model.Compte;
 import com.suivi.model.Glycemie;
 import com.suivi.model.Insuline;
+import jakarta.persistence.EntityManager;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -27,6 +28,9 @@ public class GlycemieServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login.jsp");
             return;
         }
+
+        // --- Récupération de l'EntityManager ouvert par le filtre ---
+        EntityManager em = (EntityManager) request.getAttribute("em");
 
         try {
             double valeur = Double.parseDouble(request.getParameter("valeur"));
@@ -70,7 +74,8 @@ public class GlycemieServlet extends HttpServlet {
                 }
             }
 
-            glycemieDao.sauvegarder(glycemie);
+            // Passage de l'EntityManager au DAO
+            glycemieDao.sauvegarder(em, glycemie);
             response.sendRedirect(request.getContextPath() + "/dashboard");
 
         } catch (Exception e) {
