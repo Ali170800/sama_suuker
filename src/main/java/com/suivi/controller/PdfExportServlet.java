@@ -8,6 +8,7 @@ import com.suivi.dao.GlycemieDao;
 import com.suivi.model.Compte;
 import com.suivi.model.Glycemie;
 import com.suivi.model.Insuline;
+import jakarta.persistence.EntityManager;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -37,7 +38,11 @@ public class PdfExportServlet extends HttpServlet {
             return;
         }
 
-        List<Glycemie> glycemies = glycemieDao.listerParCompte(compte.getId());
+        // --- Récupération de l'EntityManager ouvert par le filtre ---
+        EntityManager em = (EntityManager) request.getAttribute("em");
+
+        // Utilisation de cet EntityManager pour appeler la méthode du DAO
+        List<Glycemie> glycemies = glycemieDao.listerParCompte(em, compte.getId());
 
         response.setContentType("application/pdf");
         response.setHeader("Content-Disposition", "attachment; filename=Rapport_Medical_Glycemie.pdf");
@@ -88,7 +93,7 @@ public class PdfExportServlet extends HttpServlet {
             document.add(new Chunk(separator));
             document.add(new Paragraph(" "));
 
-            // --- 3. TABLEAU DES MESURES (EN PREMIER DANS LE PDF) ---
+            // --- 3. TABLEAU DES MESURES ---
             PdfPTable table = new PdfPTable(5);
             table.setWidthPercentage(100);
             table.setWidths(new float[]{3.2f, 2.2f, 2.5f, 2.2f, 3.2f});
@@ -152,7 +157,7 @@ public class PdfExportServlet extends HttpServlet {
 
             document.add(table);
 
-            // --- 4. LA COURBE (SOUS LE TABLEAU DANS LE PDF) ---
+            // --- 4. LA COURBE ---
             String chartDataString = request.getParameter("chartImage");
             if (chartDataString != null && chartDataString.startsWith("data:image/png;base64,")) {
                 try {
@@ -185,6 +190,7 @@ public class PdfExportServlet extends HttpServlet {
         } catch (DocumentException e) {
             throw new IOException("Erreur lors de la génération du rapport PDF", e);
         }
+        // L'EntityManager sera fermé automatiquement par le filtre EntityManagerFilter à la fin de la requête.
     }
 
     private void addCellHeader(PdfPTable table, String text) {
